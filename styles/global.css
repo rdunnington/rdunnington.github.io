@@ -25,6 +25,14 @@ img
 	border: 2px solid #eba613;
 }
 
+.quote
+{
+	border: 2px;
+	border-radius: 5px;
+	padding: 10px;
+	background-color:#303030;
+}
+
 /* resume table */
 
 .resume-header
