@@ -10,19 +10,25 @@ nav a
 
 body
 {
-	background-color:#202020;
 	font-family: 'Consolas', 'Menlo', 'Bitstream Vera Sans Mono', 'sans-serif';
 	margin: auto;
 	padding:20px;
 	max-width: 600px;
 	text-align: left;
+	tab-size: 4;
 	color:#d0d0d0;
+	background-color:#202020;
 }
 
 img
 {
 	max-width: 600px;
 	border: 2px solid #eba613;
+}
+
+.spaced-list ul li
+{
+	padding: 4px;
 }
 
 .quote

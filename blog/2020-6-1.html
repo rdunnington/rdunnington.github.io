@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Static Pimpl | Reuben Dunnington</title>
+	<meta charset="UTF-8">
+	<meta name="description" content="Personal website with a blog and resume.">
+	<meta name="keywords" content="programming, blog">
+	<meta name="author" content="Reuben Dunnington">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="../styles/global.css">
+	<link rel="stylesheet" type="text/css" href="../script/highlight/monokai.css">
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-167453445-1"></script>
+	<script src="../script/gtag.js"></script>
+	<script src="../script/highlight/highlight.pack.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+<body>
+	<nav>
+		<a href="/">Home</a>
+		<a href="/resume">Resume</a>
+		<a href="/projects">Projects</a>
+		<a href="/blog">Blog</a>
+	</nav>
+	<h1>Static Pimpl</h1>
+	<h3>2020-6-1</h3>
+	<p>The <a href="https://en.cppreference.com/w/cpp/language/pimpl" target="_blank">pimpl idiom</a> is a common approach to hiding implementation details in C/C++. A typical C++ use case looks like:</p>
+	<pre><code>// .h
+class FileImpl;
+class File
+{
+	File();
+	~File();
+	bool Open(const char* path);
+	void Close();
+
+	std::unique_ptr<FileImpl> pimpl;
+};</code></pre>
+	<p>There are some problems with this approach:</p>
+	<p class="spaced-list">
+		<ul>
+			<li>Another dynamic allocation is usually required. You could do some sort of pooled approach where the object comes from an arena and another block of structs are allocated on demand. However, in my experience that almost never happens in cases where pimpl is used.</li>
+			<li>There is always an extra pointer hop. There’s no way to get around this one if you want the members of the implementation to remain completely private. It’s the cost of the way C/C++ defines type linkage through headers.</li>
+			<li>There’s even a third problem with the C++ version, which is that object-oriented design can guide programmers into replicating the interface of the public object down to the private object. The public interface ends up being a wrapper object making mirrored calls down to the private object’s functions, duplicating the interface code for no benefit.</li>
+		</ul>
+	</p>
+	<p>What if we did it more C-style? It looks similar, but at least there isn’t the OOP trap to fall into.</p>
+	<pre><code>// .h
+struct file_impl_t;
+struct file_t
+{
+	struct file_impl_t* pimpl;
+};
+
+bool file_open(struct file_t* file, const char* path);
+void file_close(struct file_t* file);</code></pre>
+	<p>Now what if we reserved all the space for the private implementation inside the struct?</p>
+	<pre><code>// .h
+struct file_t
+{
+	char pimpl[32];
+};
+
+// .c
+struct file_impl_t
+{
+	// OS-specific data
+};;
+
+_Static_assert(sizeof(struct file_impl_t) &lt;= sizeof(struct file_t));</code></pre>
+	<p>Now you don’t have either the extra dynamic allocation or pointer hop problems. All this takes is an extra cast inside the functions. Both C++11 and C11 have static assert, so you can guarantee the casts are safe and catch any potential errors at build time.</p>
+	<pre><code>bool file_open(struct file_t* file, const char* path)
+{
+	struct file_impl_t* impl = (struct file_impl_t*)file;
+	// ...
+}</code></pre>
+	<p>This also folds nicely into the principle of <a href=https://ourmachinery.com/post/defaulting-to-zero/" target="_blank">zero-by-default</a>. If the API follows this convention, users can simply zero-initialize the struct and not have to worry about another function that allocates the private implementation to ensure everything is fully initialized. This approach works well with C-style codebases that don’t do a lot of RAII.</p>
+	<p>The main drawback is the types become a bit more annoying to inspect in a debugger, since you have to cast them to the pimpl type. Visual Studio has <a href="https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects" target="_blank">custom visualizers</a> to aid debugging, which can help a lot with this problem. If anyone knows of an equivalent solution for gdb, XCode, or your debugger of choice, let me know.</p>
+	<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;AutoVisualizer xmlns=&quot;http://schemas.microsoft.com/vstudio/debugger/natvis/2010&quot;&gt;
+    &lt;Type Name=&quot;file_t&quot;&gt;
+   	 &lt;Expand&gt;
+   		 &lt;Item Name=&quot;Impl&quot;&gt;(file_impl_t*)impl&lt;/Item&gt;
+   	 &lt;/Expand&gt;
+    &lt;/Type&gt;
+&lt;/AutoVisualizer&gt;</code></pre>
+</body>
+</html>
+
