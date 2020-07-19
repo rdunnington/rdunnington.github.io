@@ -73,8 +73,8 @@ _Static_assert(sizeof(struct file_impl_t) &lt;= sizeof(struct file_t));</code></
 	struct file_impl_t* impl = (struct file_impl_t*)file;
 	// ...
 }</code></pre>
-	<p>This also folds nicely into the principle of <a href=https://ourmachinery.com/post/defaulting-to-zero/" target="_blank">zero-by-default</a>. If the API follows this convention, users can simply zero-initialize the struct and not have to worry about another function that initializes the private implementation. This approach works well with C-style codebases that don’t do a lot of RAII.</p>
-	<p>The main drawback of this approach is the types become annoying to inspect in a debugger, since you have to cast them to the pimpl type. Most debuggers have custom visualizers that will make this a non-issue, like <a href="https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects" target="_blank">Visual Studio</a> and <a href=http://plohrmann.blogspot.com/2013/10/writing-debug-visualizers-for-gdb.html>gdb</a>.</p>
+	<p>This also folds nicely into the principle of <a href="https://ourmachinery.com/post/defaulting-to-zero/" target="_blank">zero-by-default</a>. If the API follows this convention, users can simply zero-initialize the struct and not have to worry about another function that initializes the private implementation. This approach works well with C-style codebases that don’t do a lot of RAII.</p>
+	<p>The main drawback of this approach is the types become annoying to inspect in a debugger, since you have to cast them to the pimpl type. Most debuggers have custom visualizers that will make this a non-issue, like <a href="https://docs.microsoft.com/en-us/visualstudio/debugger/create-custom-views-of-native-objects" target="_blank">Visual Studio</a> and <a href="http://plohrmann.blogspot.com/2013/10/writing-debug-visualizers-for-gdb.html">gdb</a>.</p>
 	<p>Here's an example for the above code in Visual Studio's visualizer:</p>
 	<pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
 &lt;AutoVisualizer xmlns=&quot;http://schemas.microsoft.com/vstudio/debugger/natvis/2010&quot;&gt;
@@ -84,6 +84,7 @@ _Static_assert(sizeof(struct file_impl_t) &lt;= sizeof(struct file_t));</code></
    	 &lt;/Expand&gt;
     &lt;/Type&gt;
 &lt;/AutoVisualizer&gt;</code></pre>
+	<p>I call this technique "flat pimpl" because it's essentially flattening the old pointer pimpl into the parent struct. That's pretty much it. It's a pretty simple idea, but easy to remember.</p>
 </body>
 </html>
 
