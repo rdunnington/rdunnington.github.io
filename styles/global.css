@@ -39,6 +39,16 @@ img
 	background-color:#303030;
 }
 
+.inline-code
+{
+	border: 2px;
+	border-radius: 5px;
+	font-size:15px;
+	font-family:Courier, monospace;
+	color:#f92672;
+	background-color:#303030;
+}
+
 /* resume table */
 
 .resume-header
