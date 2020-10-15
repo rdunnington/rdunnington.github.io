@@ -7,6 +7,12 @@
 		<description>Reuben Dunnington's personal website and technical/opinion blog.</description>
 		<language>en-us</language>
 		<item>
+			<description>Enforcing static strings in structs</description>
+			<link>https://rdunnington.github.io/blog/2020-10-14</link>
+			<guid>https://rdunnington.github.io/blog/2020-10-14</guid>
+			<pubDate>Wed, 14 Oct 2020 12:00:00 PDT</pubDate>
+		</item>
+		<item>
 			<description>Simple CI in Github</description>
 			<link>https://rdunnington.github.io/blog/2020-9-22</link>
 			<guid>https://rdunnington.github.io/blog/2020-9-22</guid>
