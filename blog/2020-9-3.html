@@ -40,7 +40,7 @@
 
 	Resource m_resource;
 };</code></pre>
-	<p>In C, we would just use the ResourceInitialize() and ResourceCleanup() functions directly, because it doesn’t have destructors. In general, I think that’s A Good Thing™, but that’s the subject of another post. In this type of scoped resource cleanup situation however, it will inevitably lead to situations where you will forget to call the cleanup function, no matter how careful you are.</p>
+	<p>In C, we would just use the <span class="inline-code">ResourceInitialize()</span> and <span class="inline-code">ResourceCleanup()</span> functions directly, because it doesn’t have destructors. In general, I think that’s A Good Thing™, but that’s the subject of another post. In this type of scoped resource cleanup situation however, it will inevitably lead to situations where you will forget to call the cleanup function, no matter how careful you are.</p>
 	<pre><code>void foo()
 {
 	struct Resource scoped_resource;
