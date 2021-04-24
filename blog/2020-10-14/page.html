@@ -7,12 +7,13 @@
 	<meta name="keywords" content="programming, blog">
 	<meta name="author" content="Reuben Dunnington">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="../styles/global.css">
-	<link rel="stylesheet" type="text/css" href="../script/highlight/monokai.css">
+	<link rel="stylesheet" type="text/css" href="../../../styles/global.css">
+	<link rel="stylesheet" type="text/css" href="../../../script/highlight/monokai.css">
 	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-167453445-1"></script>
-	<script src="../script/gtag.js"></script>
-	<script src="../script/highlight/highlight.pack.js"></script>
+	<script src="../../../script/gtag.js"></script>
+	<script src="../../../script/highlight/highlight.pack.js"></script>
 	<script>hljs.initHighlightingOnLoad();</script>
+</head>
 <body>
 	<nav>
 		<a href="/">Home</a>
@@ -22,7 +23,7 @@
 	</nav>
 	<h1>Enforcing Static Strings in Structs</h1>
 	<h3>2020-10-14</h3>
-	<p>Let’s say we have some struct that contains a string. For some reason, we really need this string to be static because we don’t want to bother with cleanup. For example, the <a href="https://github.com/rdunnington/rjd" target="_blank">rjd</a> library uses a uniform error reporting interface called <span class="inline-code">rjd_result</span>, which is simply a struct that contains a static string. If the string is null, there’s no error. If the string has been set, there was an error. Here’s a usage example:</p>
+	<p>Let’s say we have some struct that contains a string. For some reason, we really need this string to be static because we don’t want to bother with cleanup. For example, the <a href=" https://github.com/rdunnington/rjd" target="_blank">rjd</a> library uses a uniform error reporting interface called <span class="inline-code">rjd_result</span>, which is simply a struct that contains a static string. If the string is null, there’s no error. If the string has been set, there was an error. Here’s a usage example:</p>
 	<pre><code>struct rjd_result
 {
     const char* error;
@@ -33,15 +34,16 @@ if (result.error) {
     printf(“some_api_call returned: %s\n”, result.error);
     // handle the error
     return;
-}</code></pre>
+}
+</code></pre>
 	<p>The user doesn’t have to worry about cleaning up the struct and can early out, because the error string is statically allocated. Until recently, this was not enforced and you had to know to never set a dynamic string in the struct. I was thinking about how to make this better and came up with a simple, portable way to do it. If you use a macro to create the struct, you can have the macro require the passed string to be static. Note that this requires support for C99’s compound literals.</p>
-
-<pre><code>#define RJD_RESULT(static_string) ((struct rjd_result){“” static_string}))
+	<pre><code>#define RJD_RESULT(static_string) ((struct rjd_result){“” static_string}))
 
 // using it later:
-return RJD_RESULT(“unknown error”);</code></pre>
+return RJD_RESULT(“unknown error”);
+</code></pre>
 	<p>The key here is using C’s automatic static string concatenation to force the expression to be considered a static string. The empty quotes inside the compound literal are ensuring static_string is actually a static string. Note that the error message for passing a non-static string is not very good.</p>
-<pre><code>struct rjd_result
+	<pre><code>struct rjd_result
 {
     const char* str;
 };
@@ -54,19 +56,20 @@ int main(void)
     struct rjd_result r = RJD_RESULT(p);
 
     return 0;
-}</code></pre>
+}
+</code></pre>
 	<p>Building the above code in clang results in the error:</p>
-<pre><code>main.c:11:35: error: expected '}'
+	<pre><code>main.c:11:35: error: expected '}'
         struct rjd_result r = RJD_RESULT(p);
                                          ^
 main.c:11:24: note: to match this '{'
         struct rjd_result r = RJD_RESULT(p);
                               ^
 main.c:6:55: note: expanded from macro 'RJD_RESULT'
-#define RJD_RESULT(static_string) ((struct rjd_result){"" static_string})</code></pre>
+#define RJD_RESULT(static_string) ((struct rjd_result){"" static_string})
+</code></pre>
 	<p>Hopefully the <span class="inline-code">static_string</span> variable name in the macro source is enough to point the user in the right direction.</p>
 	<p>This enforcement method still relies on the macro. If the user decides to manually construct an <span class="inline-code">rjd_result</span> with a dynamic string there’s nothing stopping them from doing that. But maybe there’s a good reason for doing so, and the programmer will ensure that particular result will not be propagated all the way up to client code, to keep the “no need for cleanup” guarantee.</p>
 	<p>If anyone comes up with a way of doing this that has better error messaging or avoids macros, please let me know. 😊</p>
 </body>
 </html>
-
