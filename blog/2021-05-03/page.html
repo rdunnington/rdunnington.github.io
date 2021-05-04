@@ -114,7 +114,8 @@ const char* footer_lines[] =
 };
 </code></pre>
 	<p>That’s basically the whole Markdown to HTML translation process. The rest of the site generator recursively walks an input folder, translating each markdown file it finds to a corresponding HTML file in an output directory. Non-markdown files such as .css or .js get a regular file copy to the destination.</p>
-	<p>The time it takes to generate this website on my 2017 Macbook (1.3ghz dual core i5) is:</p>
+	<p>You can browse the source to the website generator here: <a href=" https://github.com/rdunnington/website-gen" target="_blank">website-gen</a>.</p>
+	<p>Finally, how long does it take to regenerate the whole site? I'm sure Hugo/Jekyll have me beat, but on my 2017 Macbook (1.3ghz dual core i5):</p>
 	<pre><code>&gt; time src/gen markdown rdunnington.github.io
 0.16s user 0.13s system 94% cpu 0.301 total
 </code></pre>
