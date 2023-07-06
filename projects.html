@@ -29,12 +29,14 @@
 	<h2>zig-slotmap</h2>
 	<p>Handle-based array.</p>
 	<p>Zig is a great up-and-coming language with the potential to replace C. While writing a small asteroids game with it, I needed a handle-based, contiguous-memory data structure. I decided to publish a small standalone library that other people could use in their own projects.</p>
-	<p>The slotmap data structure has been around for a very long time in concept and implementation, but there hasn't been a common name until recently, where the name "Slotmap" seems to have won the popular vote.</p>
+	<p>The slotmap data structure concept has been around for a very long time, also known by other names such as "salted table" or "generational array". It's very popular in gamedev circles.</p>
+	<p>Platforms: Any</p>
 	<a href=" https://github.com/rdunnington/zig-slotmap" target="_blank">Source</a>
 	<h2>zig-stable-array</h2>
 	<p>Array with address-stable memory that works by leveraging virtual memory.</p>
 	<p>Another zig project, and one that implements a container I find myself using more and more these days. Specify a large amount of uncommitted virtual up-front, and never worry about the overhead of large array resizes. Also good to use if you want to guarantee pointer stability when the array grows. Uses <span class="inline-code">std.ArrayList</span> semantics, so it's relatively quick to use as a drop-in replacement if needed.</p>
 	<p>Platforms: Windows, MacOS, and Linux.</p>
+	<a href=" https://github.com/rdunnington/zig-stable-array" target="_blank">Source</a>
 	<h2>rjd</h2>
 	<p>A lightweight cross-platform game engine written in C11.</p>
 	<p>This started as an experiment in how to do things without any of the object-oriented or RAII paradigms of C++, and I quickly fell in love with the simplicity and cognitive load of C. I add more features to the library when I feel sufficiently motivated, though these days most of my development efforts have moved to Zig projects.</p>
