@@ -20,22 +20,30 @@
 		<a href="/blog">Blog</a>
 	</nav>
 	<h1>Resume</h1>
-	<h2>Reuben Dunnington: Engine Programmer</h2>
-	<p>I clarify problems, write simple and resilient code, continually learn and grow, and care for my team.</p>
-	<h2>Experience</h2>
+	<h2>Reuben Dunnington: Systems Programmer</h2>
+	<p>Empathetic, intrinsically motivated generalist. Building performant, scalable systems across teams and disciplines.</p>
+	<h2>Professional Experience</h2>
 	<div class="resume-header">
-			<div class="resume-h1-left">Unannounced Title</div>
+			<div class="resume-h1-left">Multiplayer Open World RPG</div>
 			<div class="resume-h1-right">Believer Entertainment</div>
 	</div>
 	<div class="resume-header">
-			<div class="resume-h2-left">PC</div>
+			<div class="resume-h2-left">PC, iOS</div>
 			<div class="resume-h2-right">August 2023 to Present</div>
 	</div>
 	<ul>
-		<li> Working on systems across both engine and infrastructure to support engineering and content creators.</li>
+		<li> Developed technical interview process for systems engineers and made key hires. Cross-team systems eng meeting, driving quality, performance, scaling, and identifying problems with systems, process, and workflow.</li>
+		<li> Led development on a Mass-based NPC spawn/despawn system featuring multi-agent patrols with editor and runtime tooling and visualization. Character cap and intelligent despawn to control perf without loss of NPCs.</li>
+		<li> Created and drove Unreal upgrade process, coordinating stakeholders across the studio to ensure minimal disruption. "Smoothest engine upgrade I've seen in my career" - Principal Tech Artist Matt Canei.</li>
+		<li> Created optimization plan highlighting effort-to-reward. Implemented character and replication optimizations, bringing single-threaded server frametime down from 54.97ms avg (141ms max) to 21.83ms avg (62ms max).</li>
+		<li> Championed and drove debug menu adoption across the studio. Integrated and <a href=" https://github.com/believer-oss/UnrealImGui" target="_blank">modified Imgui</a> to work seamlessly in a client-server environment.</li>
+		<li> Custom OSS <a href=" https://github.com/believer-oss/ethos/tree/main/friendshipper" target="_blank">git source control</a> solution for Unreal. UGS parity with game/engine syncing for content creators. Rust-based external tooling. OFPA name translation. Optimizations for <a href=" https://github.com/believer-oss/FriendshipperSourceControl" target="_blank">Unreal plugin</a> bringing ops from 20s to 0.5s, and batched locking 1000x faster in DynamoDB (1500s to 1.5s).</li>
+		<li> From-scratch <a href=" https://github.com/believer-oss/Untested" target="_blank">OSS code testing framework</a>, with Slate UI test runner. Code tests have native coroutine support. Unit, "world", and client-server tests for guaranteeing replicated behavior.</li>
+		<li> OpenTelemetry library integration and <a href=" https://github.com/believer-oss/UnrealOpenTelemetry" target="_blank">OSS plugin</a> featuring spans, metrics, and events. Built-in editor, map, and PIE load timing observability.</li>
+		<li> Mentored interns, junior, and senior engineers. No gameplay or systems experience to effective Unreal C++ developers in ~6 months. Code reviews, “mob” programming, and quick feedback loops to accelerate learning.</li>
 	</ul>
 	<div class="resume-header">
-			<div class="resume-h1-left">Canceled FPS Title</div>
+			<div class="resume-h1-left">Canceled PvEvP FPS</div>
 			<div class="resume-h1-right">Team Kaiju</div>
 	</div>
 	<div class="resume-header">
@@ -43,9 +51,9 @@
 			<div class="resume-h2-right">March 2022 to August 2023</div>
 	</div>
 	<ul>
-		<li> Identified and optimized both code and data sources of Unreal game thread perf problems across a variety of different systems. Champion for workflow iteration times, improving PIE performance from 45ms down to 15ms, map load times from 5+ mins to ~30s, and “Heavy PIE” startup times from 30+ mins to less than 1 min.</li>
-		<li> Wrote custom tooling and debug systems to support content creators' specific needs around animation, world building, audio, and gameplay systems, including extending existing Unreal systems with new UI and hotkeys.</li>
-		<li> Owned the full stack of AI locomotion and animation systems, implementing AI-driven, designer-tweakable, custom movement abilities synced with animation in a networked environment.</li>
+		<li> Identified and optimized both code and data sources of Unreal game thread perf problems across a variety of different systems. Champion for workflow iteration times, improving PIE performance from 45ms down to 15ms, map load times from 5+ mins to ~30s, and out-of-process PIE startup times from 30+ mins to ~1 min.</li>
+		<li> Wrote custom tooling and debug systems to support content creators' specific needs around animation, world building, audio (Wwise), and gameplay systems. Extended existing Unreal systems with new UI and hotkeys.</li>
+		<li> Owned the full stack of NPC AI, locomotion, and animation systems, implementing behavior tree-driven, designer-tweakable, custom movement abilities synced with animation in a networked environment.</li>
 		<li> Extended the Houdini Engine for Unreal plugin to leverage native landscape spline curves for procgen roads.</li>
 		<li> Champion for test automation, extending the native Unreal framework to simplify writing tests, creating multiple code and BP-oriented tests to lead by example, and integrated them with our automated Jenkins pipeline.</li>
 		<li> Leveraged Unreal replication and RepGraph, minimizing net traffic while providing a compelling real-time, debuggable experience on the client for gameplay systems such as destruction and AI-oriented functionality.</li>
@@ -60,7 +68,7 @@
 			<div class="resume-h2-right">Jan 2018 to March 2022</div>
 	</div>
 	<ul>
-		<li> Ported Slipspace engine and shader compiler pipeline to the prerelease Xbox Series X hardware, OS, and SDK, while working with the platform team in a tight loop of kernel and SDK bug feedback, testing, and verification.</li>
+		<li> Ported Slipspace engine, tools, and CI to prerelease Xbox Series X hardware, OS, and SDK. Worked closely with the platform team providing kernel and SDK feedback, testing, and bug reports. Managed rollout to 500+ people.</li>
 		<li> Aggressively profiled and optimized memory for many systems in different parts of the engine, saving hundreds of megs that allowed the memory-constrained Xbox One title to ship and increasing Mean-Time-To-Failure over 4x (46.6 to 197.6 mins).</li>
 		<li> Owned all engine-level memory APIs, creating new in-engine and standalone tools for memory analysis, improving existing tracking features, and hooking telemetry support for continuous integration visiblity.</li>
 		<li> Profiled and implemented optimizations for major perf bottlenecks in the asset pipeline's asset metadata system, in some cases shaving hours off nightly build times.</li>
@@ -77,8 +85,8 @@
 	<ul>
 		<li> Discovered and executed CPU and memory optimization opportunities in client code, including a new custom Lua memory profiler and content tools that shaved over 40% of overall memory usage and cut load times in half.</li>
 		<li> Designed and implemented NoSQL-based systems capable of unlimited horizontal scaling in a live environment.</li>
-		<li> Created an automatic server-based hot-reload system for Lua to enable teammates to iterate more quickly.</li>
-		<li> "Full stack" engineer for many gameplay UIs and systems.</li>
+		<li> Created an automatic server-based hot-reload system for Lua to enable quick iteration on mobile devices.</li>
+		<li> Full stack engineer for gameplay. UI/UX, gameplay logic, node.js backend, redis and rethinkdb storage.</li>
 		<li> Mentored junior engineers, increasing their independence and spreading knowledge of in-house systems.</li>
 	</ul>
 	<div class="resume-header">
@@ -186,6 +194,35 @@
 	</div>
 	<ul>
 		<li> Supported and added major features, polished UX, and met inhouse needs for a Vala IDE plugin for Gedit.</li>
+	</ul>
+	<h2>Open Source Experience</h2>
+	<div class="resume-header">
+			<div class="resume-h1-left">Orca</div>
+	</div>
+	<div class="resume-header">
+			<div class="resume-h2-left">Windows, MacOS</div>
+			<div class="resume-h2-right">Aug 2023 to Present</div>
+	</div>
+	<ul>
+		<li> Major contributor to the <a href=" https://github.com/orca-app/orca" target="_blank">Orca</a> project, a development platform and runtime environment for cross-platform, sandboxed graphical applications.</li>
+		<li> Implemented a full C standard library implmentation in terms of Orca APIs to provide a familiar programming environment for C programmers.</li>
+		<li> Provided a complete set of idomatic API bindings to the Zig programming langugage.</li>
+		<li> Replaced raw calls to wasm3 with a custom wasm layer that allows for easy compile-time switching between wasm backends.</li>
+		<li> Platform layer work fixing bugs and bringing Windows to parity with MacOS.</li>
+	</ul>
+	<div class="resume-header">
+			<div class="resume-h1-left">Bytebox</div>
+	</div>
+	<div class="resume-header">
+			<div class="resume-h2-left">Windows, MacOS</div>
+			<div class="resume-h2-right">Oct 2021 to Present</div>
+	</div>
+	<ul>
+		<li> Primary author and maintainer of <a href=" https://github.com/rdunnington/bytebox" target="_blank">Bytebox</a>, a from-scratch WebAssembly interpreter written in Zig, capable of running in standalone mode or embedded as a library.</li>
+		<li> Fully compliant with the WASM 2.0 spec.</li>
+		<li> Implemented WASI Preview 1 support, an extension that allows WebAssembly programs to interact with objects outside it's sandbox via IO.</li>
+		<li> Debugging interface supports single-stepping, and tracing per-function or per-instruction.</li>
+		<li> C FFI interface for use in other languages.</li>
 	</ul>
 	<h2>Education</h2>
 	<div class="resume-header">
