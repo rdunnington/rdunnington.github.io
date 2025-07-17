@@ -23,7 +23,25 @@ body
 img
 {
 	max-width: 600px;
-	border: 2px solid #eba613;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.text-emphasis-1
+{
+	font-style: italic;
+}
+
+.text-emphasis-2
+{
+	font-weight: bold;
+}
+
+.text-emphasis-3
+{
+	font-weight: bold;
+	font-style: italic;
 }
 
 .spaced-list ul li

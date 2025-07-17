@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title> Intermediate Zig Build System | Reuben Dunnington</title>
+	<meta charset="UTF-8">
+	<meta name="description" content="Personal website with a blog and resume.">
+	<meta name="keywords" content="programming, blog">
+	<meta name="author" content="Reuben Dunnington">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="../../styles/global.css">
+	<link rel="stylesheet" type="text/css" href="../../script/highlight/monokai.css">
+	<script src="../../script/highlight/highlight.pack.js"></script>
+	<script>hljs.initHighlightingOnLoad();</script>
+</head>
+<body>
+	<nav>
+		<a href="/">Home</a>
+		<a href="/resume">Resume</a>
+		<a href="/projects">Projects</a>
+		<a href="/blog">Blog</a>
+	</nav>
+	<h1> Intermediate Zig Build System</h1>
+	<p>One of the things I’ve been working on for the Orca project is a new build system leveraging the Zig toolchain. If you’re curious, I cover the topic in this post: <a href="https://orca-app.dev/posts/250710/orca_build_system.html">https://orca-app.dev/posts/250710/orca_build_system.html</a>. Orca’s build is not simple - it required a bunch of extra knowledge of the build system to implement that I’d like to share.</p>
+	<p>This information is up to date for Zig 0.14.x. Future versions may render this information out of date.</p>
+	<p>This post is written assuming basic knowledge of Zig’s build system. If you haven’t watched Loris’ great overview on the topic, watch this first: <a href="https://www.youtube.com/watch?v=jy7w_7JZYyw">https://www.youtube.com/watch?v=jy7w_7JZYyw</a></p>
+	<h1> Lazy Builds & Paths</h1>
+	<p>To quickly review, <span class="inline-code">build.zig</span> contains a <span class="inline-code">pub fn build()</span> that generates a lazily-evaluated build graph depending on what step(s) the user selected to perform. For example, take a build graph that looks like this:</p>
+	<img src="graph.png" alt="graph: install->bar->foo, test->baz->foo"></img>
+	<p>Running <span class="inline-code">zig build install</span> will only actually run the build steps for <span class="inline-code">install</span>, <span class="inline-code">bar</span>, and <span class="inline-code">foo</span>. The <span class="inline-code">baz</span> and <span class="inline-code">test</span> steps will be ignored. We can list all the steps with <span class="inline-code">zig build -l</span>:</p>
+	<pre><code>&gt; zig build -l
+  install (default)            Copy build artifacts to prefix path
+  uninstall                    Remove build artifacts from prefix path
+  test                         Build and run all tests
+</code></pre>
+	<p>Because <span class="inline-code">build()</span> only constructs the build graph, and doesn’t actually run these steps, it’s impossible for it to know for certain what the paths for all artifacts and directories paths will be. To represent these to-be-resolved paths, it uses <span class="inline-code">LazyPath</span>, which is a union representing a path that will be resolved at some future point by the build system. </p>
+	<p><span class="inline-code">LazyPath</span>s can be created in several ways:</p>
+	<ul>
+		<li> <span class="inline-code">b.path()</span> returns a path relative to the build root</li>
+		<li> Manually constructed with an absolute or relative path: <span class="inline-code">LazyPath{.cwd_relative = "/usr/my/path"}</span></li>
+		<li> As a product of build steps, such as <span class="inline-code">Step.Compile.getEmittedBin()</span></li>
+		<li> From a dependency via <span class="inline-code">Dependency.path()</span></li>
+		<li> From <span class="inline-code">LazyPath.join()</span>, which concats a given instance with a subpath</li>
+	</ul>
+	<p><span class="inline-code">LazyPath</span> is an extremely important tool for the build system. While <span class="inline-code">Build.Step.dependOn()</span> is used to establish the ordering between steps, <span class="inline-code">LazyPath</span> is often the way data is passed between steps. When passing data to another <span class="inline-code">Build.Step</span>, use <span class="inline-code">LazyPath.addStepDependencies()</span> to ensure the proper dependencies are established between the two steps - this is much easier than setting them up manually.</p>
+	<h1> Dependencies</h1>
+	<p>Distinct from build graph dependencies (<span class="inline-code">Build.Step</span>), package dependencies (<span class="inline-code">Build.Dependency</span>) represent a build-time dependency on external code/data, and are declared in <span class="inline-code">build.zig.zon</span>. By default, all dependencies are fetched up-front by <span class="inline-code">zig build</span> to ensure they’re available to the build script when it runs. However, let’s say you have a platform-specific dependency such as<span class="inline-code">dawn-windows-x64</span>. It would be wasteful to require fetching this for non-Windows targets. Luckily, any dependency can be marked <span class="inline-code">lazy</span> inside <span class="inline-code">build.zig.zon</span> to avoid requiring it by default:</p>
+	<pre><code>.@"dawn-windows-x64" = .{
+	.url = "https://github.com/orca-app/dawn/releases/download/release-8260be1/dawn-windows-x64.tar.gz",
+	.hash = "N-V-__8AAFgqSwAoOlOfK8ZzIHcOlfAwAKfuQLTHGrLS7Nzj",
+	.lazy = true,
+},
+</code></pre>
+	<p>This modifies usage a bit inside the build script, where you need to explicitly refer to these with <span class="inline-code">Build.lazyDependency()</span>, and unwrap the possibly-null value. Once it’s unwrapped, you can use the dependency as usual.</p>
+	<pre><code>if (target.result.os.tag == .windows) {
+	if (b.lazyDependency("dawn-windows-x64", .{})) |dawn_dep| {
+			// dawn_dep is of type Build.Dependency as usual
+	}
+}
+</code></pre>
+	<p>Under the hood, after the build graph is constructed, <span class="inline-code">zig build</span> checks to see if there are any calls to <span class="inline-code">lazyDependency()</span> that require as-yet-unfetched dependencies; these would have returned <span class="inline-code">null</span> in the build script. If there needed dependencies, it fetches them on the spot and reruns the build script with the now-satisfied lazy dependencies. See the <a href="https://github.com/ziglang/zig/blob/d03a147ea0a590ca711b3db07106effc559b0fc6/lib/std/Build.zig#L2186-L2217">source code</a> for more details.</p>
+	<p>One other cool thing about dependencies is the level of access you can get to data inside the package. Zig projects enjoy first-class support where you can get access to any public <span class="inline-code">Module</span>, <span class="inline-code">Step.Compile</span>, <span class="inline-code">WriteFile</span>, or even <span class="inline-code">LazyPath</span>. However, even if the dependency isn’t a Zig module, and is just an archive, you can still get access to any path inside the package with <span class="inline-code">Dependency.path()</span>. </p>
+	<p>The combination of these two features is how Orca fetches prebuilt dependencies for the complex Angle and Dawn libraries, and seamlessly links them into the build for the particular target the user is building.</p>
+	<h1> Targets</h1>
+	<p>Zig’s cross-compilation support is best-in-class, bar none. It’s very easy to build a given application with a target triple, such as <span class="inline-code">zig build -Dtarget=mips-linux-gnueabi</span>, even if you’re on a completely different architecture and platform. But if you wanted to be able to specify and customize build targets in the build script itself, there is an even more powerful interface for this. </p>
+	<p>Let’s say as part of the build graph, I wanted to build a WebAssembly module with a few specific features turned on. Simply create a target query with <span class="inline-code">std.Target.Query</span>, adding optional CPU features via the <span class="inline-code">std.Target.&lt;desired target&gt;.featureSet()</span> function. Finally you resolve the query into a <span class="inline-code">Build.ResolvedTarget</span> which contains both the original query and target.</p>
+	<pre><code>const target_query: std.Target.Query = .{
+	.cpu_arch = .wasm32,
+	.os_tag = .freestanding,
+	.cpu_features_add = std.Target.wasm.featureSet(&.{.bulk_memory, .multivalue}));
+};
+const target: Build.ResolvedTarget = b.resolveTargetQuery(target_query);
+</code></pre>
+	<p>Finally, when cross-compiling for a target different than the host machine, you may want to build some modules for the host machine anyway. For example, one step of the build graph could be a helper program that embeds a bunch of shader files strings in a C header, which is then included in the build. That glue program needs to actually be run as part of the graph, and is not an artifact intended to be part of the cross-compile output. It needs to be compiled for the host target, not the target the user is specifying. You retrieve the host machine target via <span class="inline-code">b.graph.host</span>, which contains the <span class="inline-code">ResolvedTarget</span>.</p>
+	<h1> User-specified build options</h1>
+	<p>Above was just mentioned the user ability to specify a custom build target with <span class="inline-code">-Dtarget=&lt;my-target-triple&gt;</span>. Similarly, we can leverage the exposed <span class="inline-code">Build.option()</span>, which the build function can use to allow users to customize build parameters as granular as parameters to an internal build command, or a large as switching entire features on and off. New options can be added with <span class="inline-code">b.option()</span>. For example:</p>
+	<pre><code>const enable_feat1: bool = b.option(bool, "feat1", "Enable feat 1") orelse false;
+</code></pre>
+	<p>Since it’s just a regular variable, it can be used elsewhere in the build script however it’s needed, and even passed along to the source code via the special <span class="inline-code">Options</span> build step.</p>
+	<h1> Steps</h1>
+	<p>We briefly recapped steps above, but mainly how they depend on each other, and how those dependencies are lazily resolved. But what do steps actually <span class="text-emphasis-1">do?</span></p>
+	<h3> <span class="inline-code">Compile</span></h3>
+	<p>The most common build step. It does the work of actually building source code and linking the intermediate artifacts with libraries. If you’ve written a <span class="inline-code">build.zig</span>, you’ve likely already used it. </p>
+	<p>A couple handy things to know:</p>
+	<ul>
+		<li> <span class="inline-code">getEmittedBin()</span>: can be used to get the <span class="inline-code">LazyPath</span> to the emitted binary in the <span class="inline-code">.zig-cache</span> directory. This can be useful for feeding to other build steps.</li>
+		<li> <span class="inline-code">getEmittedAsm()</span>: <a href="http://godbolt.org">godbolt.org</a> is great for examining standalone functions, but it’s often not practical in the context of a large program. For examining the codegen of a given artifact, you can use this function to get the path to the emitted assembly and install it into <span class="inline-code">zig-out</span> with the <span class="inline-code">InstallFile</span> step.</li>
+	</ul>
+	<h3> <span class="inline-code">Options</span></h3>
+	<p>Used to pass along user-specified build options to the source code. Typically you don’t create this step manually, but use <span class="inline-code">b.addOptions()</span>. Seeing it in action is probably the easiest way to explain how it’s used.</p>
+	<pre><code>// In build.zig:
+const enable_feat1: bool = b.option(bool, "feat1", "Enable feat 1") orelse false;
+
+const options = b.addOptions();
+options.addOption(bool, "enable_feat1", enable_feat1);
+
+const my_module: *Build.Module = b.addModule("my_mod", .{
+    .root_source_file = b.path("src/main.zig")
+});
+my_module.addOptions("build_config", options);
+
+// In main.zig:
+const build_config = @import("build_config");
+comptime {
+    if (build_config.enable_feat1) {
+        // shoot your shot
+    }
+}
+</code></pre>
+	<h3> <span class="inline-code">InstallArtifact</span> / <span class="inline-code">InstallDir</span> / <span class="inline-code">InstallFile</span></h3>
+	<p><span class="inline-code">Compile</span> artifacts are automatically installed to the prefix directory (typically <span class="inline-code">zig-out</span>). However, if you wanted other artifacts, header files, logs, etc to be installed to the prefix directory as well, you could use these steps to do so.</p>
+	<p>Some convenient functions on <span class="inline-code">Build</span> that wrap some of this functionality are below. For example purposes, we’ll assume the prefix directory is <span class="inline-code">zig-out/</span>:</p>
+	<ul>
+		<li> <span class="inline-code">b.installArtifact()</span>: commonly used to ensure artifacts are installed to <span class="inline-code">zig-out/bin</span>.</li>
+		<li> <span class="inline-code">b.addInstallHeaderFile()</span>: installs supplied files into <span class="inline-code">zig-out/include</span></li>
+		<li> <span class="inline-code">b.installDirectory()</span>: recursively installs the specified directory to the user-specified location inside <span class="inline-code">zig-out/</span> via <span class="inline-code">std.Build.InstallDir</span> options.</li>
+	</ul>
+	<p><span class="inline-code">std.Build.InstallDir</span> struct lets you specify where you want a given file/directory to go inside the install directory. There are some presets for convenience, though you can completely customize the destination:</p>
+	<pre><code>const root_dir: Build.InstallDir = .prefix; // root of zig-out/
+const lib_dir: Build.InstallDir = .lib; // zig-out/lib
+const bin_dir: Build.InstallDir = .bin; // zig-out/bin
+const header_dir: Build.InstallDir = .header; // zig-out/include
+const custom_dir: Build.InstallDir = .{.custom = "logs" }; // zig-out/logs
+</code></pre>
+	<h3> <span class="inline-code">UpdateSourceFiles</span></h3>
+	<p>Used to copy files from elsewhere and copy them into the source tree. For example, if part of your build has a codegen step based on some metadata file, you could use this step to copy the generated files into the source tree. It’s intended that this step is run offline so all source files that are part of the build are checked into the repo, though there are no enforcement mechanisms.</p>
+	<p>It’s worth noting you can technically use this to simulate the same behavior as the Install steps, but it’s more error prone and tedious since you must explicitly list every file.</p>
+	<h3> <span class="inline-code">Fail</span></h3>
+	<p>Explicitly fail the build if some precondition isn’t met. For example if you require a user to specify a build option with <span class="inline-code">-D&lt;some_option&gt;</span>. This can be nicer than hitting a hard <span class="inline-code">@panic</span>, especially if the failure can be hit in a non-developer scenario.</p>
+	<h3> <span class="inline-code">Run</span></h3>
+	<p>Runs executables built in the build graph, system-installed programs located in <span class="inline-code">PATH</span>, or other executables by user-provided path. Commonly used to set up the application and tests for easy one-click build+run. </p>
+	<p>Also the ultimate escape hatch. If there isn’t already a step that does exactly what you want, you can write a program to do the exact thing you want, then compile it, and run it with this step.</p>
+	<p>This step provides an interface to defining file and directory <span class="inline-code">LazyPath</span>s inputs and outputs, which establishes them as data dependencies, and will automatically invalidate the program output and rerun it if the inputs have changed. For example, for a program that generates a header file based on shaders in an input directory:</p>
+	<pre><code>// assuming gen_header_program is a *Compile step
+const gen_header = b.addRunArtifact(gen_header_program);
+gen_header.addPrefixedDirectoryArg("--shader-dir=", b.path("data/shaders"));
+const path: LazyPath = gen_header.addPrefixedOutputFileArg("--out=", "shaders.h");
+</code></pre>
+	<h3> <span class="inline-code">Fmt</span></h3>
+	<p>Used to either update or check that input source files conform to the zig formatter. You could use this to ensure generated files conform to <span class="inline-code">zig fmt</span> or to check in CI that all source files are correctly formatted.</p>
+	<h3> <span class="inline-code">Options</span></h3>
+	<p>Used to allow users to forward build graph inputs to the compilation process. Typically added via <span class="inline-code">b.addOptions()</span>. </p>
+	<h3> Others</h3>
+	<p>There are several other steps that do specialized things; you can read up on them in the source code: <a href="https://github.com/ziglang/zig/tree/0.14.1/lib/std/Build/Step">https://github.com/ziglang/zig/tree/0.14.1/lib/std/Build/Step</a>.</p>
+	<h1> Building C projects</h1>
+	<p>Zig has first-class support for building C and C++ code with it’s build system. To do this, you can use the <span class="inline-code">Compile.addCSourceFiles()</span> function. It allows you to specify Clang-style compilation <a href="https://clang.llvm.org/docs/ClangCommandLineReference.html">flags</a> for fine-grained control, and specify the root path for file search. Note that <span class="inline-code">root</span> is a <span class="inline-code">LazyPath</span>, allowing it to search committed, generated, and dependency paths.</p>
+	<pre><code>const my_module: *Build.Module = b.addModule("my_mod", .{});
+my_module.addCSourceFiles(.{
+    .root = b.path("src/"),
+    .files = &.{"file_a.c", "file_b.c"},
+    .flags = &.{"clang-flag-a", "clang-flag-b"},
+});
+</code></pre>
+	<p>If you’re used to using Clang, it might be tempting to use this method to control all of the compilation behavior, but in many cases Zig has already more explicit and type-checked ways of specifying this data. For example:</p>
+	<ul>
+		<li> Instead of using <span class="inline-code">-I&lt;path&gt;</span>, use <span class="inline-code">Compile.addIncludeDirectory()</span>. This has the added benefit of supporting <span class="inline-code">LazyPath</span>s.</li>
+		<li> Instead of turning off sanitize flags with <span class="inline-code">-fno-sanitize=&lt;setting&gt;</span>, use <span class="inline-code">Module.CreateOptions.sanitize_c</span>. This prevents various flags from fighting with each other.</li>
+		<li> Instead of <span class="inline-code">-nolibc</span>, use <span class="inline-code">Module.CreateOptions.link_libc = false</span>, which gives the Zig build graph visibility on the desired usage of libc.</li>
+	</ul>
+	<p>There are plenty more options in <span class="inline-code">Module.CreateOptions</span> - feel free to read the <a href="https://github.com/ziglang/zig/blob/master/lib/std/Build/Module.zig#L216">code</a> to see all the options.</p>
+	<h1> Allocation</h1>
+	<p>Zig puts allocation strategies front and center, and as you write more advanced <span class="inline-code">build.zig</span> programs, you will likely need to allocate memory. The <span class="inline-code">Build</span> struct has an arena allocator for convenience, located at <span class="inline-code">b.allocator</span>. Since it’s arena-based, you don’t need to worry about freeing any memory that’s allocated with it - it’ll all be cleaned up automatically.</p>
+	<p>There are also a couple handy functions that take advantage of the builtin allocator:</p>
+	<ul>
+		<li> <span class="inline-code">b.pathJoin()</span>: shorthand for <span class="inline-code">std.fs.path.join</span> without the allocator noise</li>
+		<li> <span class="inline-code">b.fmt()</span>: create formatted strings without worrying about the storage</li>
+	</ul>
+	<h1> Wrap-up</h1>
+	<p>I hope this was a helpful overview of how to tackle some intermediate-level build problems with the Zig build system. Let me know if you spot any mistakes or a better way to do what I’ve laid out here. Thanks for reading. :)</p>
+	<p>Special thanks to <a href="https://github.com/Parzival-3141">Julian</a> for proofing this post.</p>
+</body>
+</html>
